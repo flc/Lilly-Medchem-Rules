@@ -19,6 +19,7 @@ def usage (rc)
   $stderr.print " -Cs <n>        soft upper atom count cuttof (default #{$default_soft_upper_atom_count_cutoff})\n" if ($expert)
   $stderr.print " -Ch <n>        hard upper atom count cuttof (default #{$default_hard_upper_atom_count_cutoff})\n" if ($expert)
   $stderr.print " -smarts <s>    optional smarts to reject\n" if ($expert)
+  $stderr.print " -smartsfile <fname> optional smarts file containing rules to reject\n" if ($expert)
   $stderr.print " -rej <q>       optional query file to reject\n" if ($expert)
   $stderr.print " -relaxed       relaxed rules: 7-50 heavy atoms, 160 demerit cutoff\n"
   $stderr.print " -nodemerit     hard rejections only, do not apply any demerits\n" if ($expert)
@@ -41,7 +42,7 @@ def usage (rc)
   exit(rc)
 end
 
-cl = IWCmdline.new("-v-noapdm-i=s-expert-b=fraction-B=s-q=dir-log=s-tp=close-iwd=close-bindir=dir-smarts=s-rej=s-c=ipos-Cs=ipos-Ch=ipos-okiso-odm=s-edm=sfile-relaxed-nodemerit-S=s-dcf=sfile-nobadfiles")
+cl = IWCmdline.new("-v-noapdm-i=s-expert-b=fraction-B=s-q=dir-log=s-tp=close-iwd=close-bindir=dir-smarts=s-smartsfile=s-rej=s-c=ipos-Cs=ipos-Ch=ipos-okiso-odm=s-edm=sfile-relaxed-nodemerit-S=s-dcf=sfile-nobadfiles")
 
 if cl.unrecognised_options_encountered()
   $stderr.print "Unrecognised options encountered\n"
@@ -138,6 +139,20 @@ end
 
 cl.values('smarts').each do |s|
   optional_queries << " -s '#{s}'"
+end
+
+cl.values('smartsfile').each do |sf|
+  if File.exist?(sf)
+    File.open(sf) do |f|
+      f.each_line do |line|
+        # keep only the smarts, a line might contain IDs after a whitespace
+	smarts = line.split(" ")[0].strip()
+        optional_queries << " -s '#{smarts}'"
+      end
+    end
+  else
+    $stderr.print "File does not exist: #{sf}\n"
+  end
 end
 
 extra_iwdemerit_options = ""
